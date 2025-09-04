@@ -1,113 +1,234 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import axios from 'axios';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs from 'dayjs';
-import PayScreen from './Payscreen';
+import { useNavigate } from 'react-router-dom';
+import { userService } from '../services/userService.js';
+import DatePicker from './ui/DatePicker.jsx';
+import AvailabilityChecker from './ui/AvailabilityChecker.jsx';
+import BookingDetails from './ui/BookingDetails.jsx';
+import Payscreen from './ui/Payscreen.jsx';
+import PaymentSuccess from './ui/PaymentSuccess.jsx';
+import SafeImage from './ui/SafeImage.jsx';
 
-function Roomcard({ hotel_id, id, type, name, pictures, description, isAvailable, price,hotel }) {
-    const apiUrl = import.meta.env.VITE_API_URL;
+const RoomCard = React.memo(({ room, hotelName, hotelLocation }) => {
+    const [bookingStep, setBookingStep] = useState(null); // null, 'datePicker', 'availability', 'details', 'payment', 'success'
+    const [bookingData, setBookingData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-    const [userId, setUserId] = useState(null);
-    const [isHovered, setIsHovered] = useState(false);
-    const [startDate, setStartDate] = useState(null);
-    const [endDate, setEndDate] = useState(null);
-    const [status, setStatus] = useState('draft');
-    const [showPayScreen, setShowPayScreen] = useState(false);
+    // Memoize room data to prevent unnecessary re-renders
+    const roomData = useMemo(() => ({
+        id: room._id,
+        type: room.type,
+        name: room.name,
+        pictures: room.pictures || [],
+        description: room.description,
+        isAvailable: room.isAvailable,
+        price: room.price,
+        amenities: room.amenities || []
+    }), [room]);
 
-    const handleBooking = async () => {
+    const handleBookNow = useCallback(async () => {
         const storedUserId = localStorage.getItem('userId');
         if (!storedUserId) {
-            alert('User not logged in');
+            navigate('/login');
             return;
         }
 
-        setUserId(storedUserId);
-
+        setLoading(true);
         try {
-            const response = await axios.put(`${apiUrl}/api/users/bookingdraft`, { userId, hotel_id, id, startDate, endDate, status });
-            console.log(response);
-            setShowPayScreen(true);
+            await userService.addActivity({ 
+                type: 'viewed_room', 
+                hotelId: roomData.id 
+            });
+            setBookingStep('datePicker');
         } catch (error) {
-            console.error('Error:', error);
+            setBookingStep('datePicker');
+        } finally {
+            setLoading(false);
         }
-    };
+    }, [roomData]);
 
-    if (showPayScreen) {
-        
+    const handleDateSelect = useCallback((dates) => {
+        setBookingData(dates);
+        setBookingStep('availability');
+    }, []);
 
-        return <PayScreen room={{ id, type, name, pictures, description, price }} hotel={hotel} startDate={startDate} endDate={endDate} />;
-    }
+    const handleAvailabilityConfirmed = useCallback(() => {
+        setBookingStep('details');
+    }, []);
+
+    const handleProceedToPayment = useCallback((details) => {
+        setBookingData(prev => ({ ...prev, ...details }));
+        setBookingStep('payment');
+    }, []);
+
+    const handlePaymentSuccess = useCallback((paymentData) => {
+        setBookingData(paymentData);
+        setBookingStep('success');
+    }, []);
+
+    const closeBookingFlow = useCallback(() => {
+        setBookingStep(null);
+        setBookingData(null);
+    }, [roomData.id]);
+
+    // Memoize the room card content
+    const cardContent = useMemo(() => (
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition-shadow duration-200">
+            {/* Room Image */}
+            <div className="relative h-48">
+                <SafeImage
+                    src={roomData.pictures[0]}
+                    alt={roomData.name || roomData.type}
+                    fallbackType="room"
+                    className="w-full h-full object-cover"
+                />
+                {!roomData.isAvailable && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <span className="text-white text-lg font-semibold">Not Available</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Room Details */}
+            <div className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                        {roomData.name || roomData.type}
+                    </h3>
+                    <span className="text-green-600 font-bold text-lg">
+                        ${roomData.price}
+                    </span>
+                </div>
+
+                {roomData.description && (
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                        {roomData.description}
+                    </p>
+                )}
+
+                {/* Amenities */}
+                {roomData.amenities && roomData.amenities.length > 0 && (
+                    <div className="mb-3">
+                        <p className="text-xs text-gray-500 mb-1">Amenities:</p>
+                        <div className="flex flex-wrap gap-1">
+                            {roomData.amenities.slice(0, 3).map((amenity, index) => (
+                                <span
+                                    key={index}
+                                    className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                                >
+                                    {amenity}
+                                </span>
+                            ))}
+                            {roomData.amenities.length > 3 && (
+                                <span className="text-xs text-gray-500">
+                                    +{roomData.amenities.length - 3} more
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Book Now Button */}
+                <button
+                    onClick={handleBookNow}
+                    disabled={!roomData.isAvailable || loading}
+                    className={`w-full py-2 px-4 rounded-lg font-semibold transition-colors duration-200 ${
+                        roomData.isAvailable
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
+                            : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                    }`}
+                >
+                    {loading ? 'Loading...' : roomData.isAvailable ? 'Book Now' : 'Not Available'}
+                </button>
+            </div>
+        </div>
+    ), [roomData, handleBookNow, loading]);
+
+    // Memoize the booking modal
+    const bookingModal = useMemo(() => {
+        if (!bookingStep) return null;
+
+        const renderStep = () => {
+            switch (bookingStep) {
+                case 'datePicker':
+                    return (
+                        <DatePicker
+                            onDateSelect={handleDateSelect}
+                            onClose={closeBookingFlow}
+                        />
+                    );
+                case 'availability':
+                    return (
+                        <AvailabilityChecker
+                            room={roomData}
+                            bookingDates={bookingData}
+                            onAvailabilityConfirmed={handleAvailabilityConfirmed}
+                            onClose={closeBookingFlow}
+                        />
+                    );
+                case 'details':
+                    return (
+                        <BookingDetails
+                            room={roomData}
+                            hotelName={hotelName}
+                            hotelLocation={hotelLocation}
+                            bookingDates={bookingData}
+                            onProceedToPayment={handleProceedToPayment}
+                            onClose={closeBookingFlow}
+                        />
+                    );
+                case 'payment':
+                    return (
+                        <Payscreen
+                            room={roomData}
+                            hotelName={hotelName}
+                            hotelLocation={hotelLocation}
+                            bookingData={bookingData}
+                            onPaymentSuccess={handlePaymentSuccess}
+                            onClose={closeBookingFlow}
+                        />
+                    );
+                case 'success':
+                    return (
+                        <PaymentSuccess
+                            bookingData={bookingData}
+                            onClose={closeBookingFlow}
+                        />
+                    );
+                default:
+                    return null;
+            }
+        };
+
+        return renderStep();
+    }, [bookingStep, bookingData, roomData, hotelName, hotelLocation, handleDateSelect, handleAvailabilityConfirmed, handleProceedToPayment, handlePaymentSuccess, closeBookingFlow]);
 
     return (
-        <div
-            className={`bg-red-300 rounded-lg overflow-hidden shadow-lg border border-gray-300 transition-transform duration-300 ${isHovered ? 'transform scale-105' : 'transform scale-100'}`}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            style={{
-                width: '350px', // Increased width for bigger card
-                margin: '20px',  // Added margin for spacing between cards
-                padding: '20px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
-            }}
-        >
-            <div className="relative">
-                <img
-                    className="w-full h-48 object-cover rounded-lg" // Increased height and added rounded corners
-                    src={pictures[0]}
-                    alt={name}
-                />
-            </div>
-            <div className="px-4 py-4">
-                <h3 className="text-lg font-bold text-gray-900">{name}</h3>
-                <div className="text-lg font-semibold mb-1 text-gray-800">
-                    {type}
-                </div>
-                <p className="text-gray-800 text-base">
-                    {description}
-                </p>
-                <div className="text-red-500 font-semibold mt-2">${price}.00</div>
-                
-                {/* Date Pickers */}
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                        label="Start Date"
-                        value={startDate}
-                        onChange={(newValue) => setStartDate(newValue)}
-                    />
-                    <DatePicker
-                        label="End Date"
-                        value={endDate}
-                        onChange={(newValue) => setEndDate(newValue)}
-                        minDate={startDate ? startDate : dayjs()} // Disable dates before start date
-                    />
-                </LocalizationProvider>
-            </div>
-            <button
-                className="bg-navy text-white font-bold py-2 px-4 rounded-full mt-4 hover:bg-navy-700"
-                onClick={handleBooking}
-                style={{ backgroundColor: (isAvailable && startDate && endDate) ? 'navy' : 'gray' }}
-                disabled={!startDate || !endDate || !isAvailable}
-            >
-                Book Now
-            </button>
-        </div>
+        <>
+            {cardContent}
+            {bookingModal}
+        </>
     );
-}
+});
 
-Roomcard.propTypes = {
-    id: PropTypes.string.isRequired,
-    hotel_id: PropTypes.string.isRequired,
-    type: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    pictures: PropTypes.arrayOf(PropTypes.string).isRequired,
-    description: PropTypes.string.isRequired,
-    isAvailable: PropTypes.bool.isRequired,
-    price: PropTypes.number.isRequired,
+// Add display name for debugging
+RoomCard.displayName = 'RoomCard';
+
+// PropTypes for type checking
+RoomCard.propTypes = {
+    room: PropTypes.shape({
+        _id: PropTypes.string,
+        type: PropTypes.string,
+        name: PropTypes.string,
+        pictures: PropTypes.arrayOf(PropTypes.string),
+        description: PropTypes.string,
+        isAvailable: PropTypes.bool,
+        price: PropTypes.number,
+        amenities: PropTypes.arrayOf(PropTypes.string)
+    }).isRequired,
+    hotelName: PropTypes.string.isRequired,
+    hotelLocation: PropTypes.string.isRequired
 };
 
-export default Roomcard;
+export default RoomCard;
