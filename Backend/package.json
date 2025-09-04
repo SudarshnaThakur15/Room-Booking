@@ -3,11 +3,24 @@
   "version": "1.0.0",
   "description": "Hotel booking system backend",
   "main": "index.js",
+  "bin": {
+    "hotel-booking-backend": "./build.js"
+  },
   "type": "module",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "import-hotels": "node import_hotels.js"
+    "import-hotels": "node import_hotels.js",
+    "build": "node scripts/build.js",
+    "build:prod": "NODE_ENV=production node index.js",
+    "prebuild": "echo 'Preparing build...'",
+    "postbuild": "echo 'Build completed successfully'",
+    "test": "echo 'No tests specified'",
+    "lint": "echo 'No linter configured'",
+    "clean": "echo 'Cleaning node_modules...' && rm -rf node_modules package-lock.json",
+    "install:clean": "npm run clean && npm install",
+    "health": "curl -f http://localhost:5000/health || exit 1",
+    "deploy": "npm run build && npm start"
   },
   "dependencies": {
     "express": "^4.18.2",

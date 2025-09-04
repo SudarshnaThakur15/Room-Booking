@@ -1,0 +1,10 @@
+{
+  "buildTime": "2025-09-04T15:28:31.803Z",
+  "nodeVersion": "v22.14.0",
+  "platform": "win32",
+  "entryPoints": [
+    "index.js",
+    "app.js",
+    "server.js"
+  ]
+}
