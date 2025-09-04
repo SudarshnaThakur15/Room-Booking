@@ -21,7 +21,7 @@ services:
     name: hotel-booking-frontend
     env: static
     plan: free
-    buildCommand: cd Front-End && VITE_API_URL=https://room-booking-symf.onrender.com npm install && npm run build
+    buildCommand: cd Front-End && npm install && npm run build:prod
     staticPublishPath: Front-End/dist
     envVars:
       - key: VITE_API_URL
