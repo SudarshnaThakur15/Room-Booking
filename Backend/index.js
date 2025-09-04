@@ -39,29 +39,20 @@ app.use(limiter);
 // Compression middleware
 app.use(compression());
 
-// CORS configuration
-const allowedOrigins = [
-    'http://localhost:5173',
-    'https://room-booking-frontend-fu9i.onrender.com',
-    process.env.FRONTEND_URL
-].filter(Boolean);
-
+// CORS configuration - Allow all origins
 app.use(cors({
-    origin: allowedOrigins,
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    credentials: false
 }));
 
 // Handle preflight OPTIONS requests
 app.options('*', (req, res) => {
-    const origin = req.headers.origin;
-    if (allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-    }
+    res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Credentials', 'false');
     res.sendStatus(200);
 });
 

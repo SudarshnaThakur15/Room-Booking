@@ -21,24 +21,33 @@ if (!existsSync(buildDir)) {
   mkdirSync(buildDir, { recursive: true });
 }
 
+// Copy the main application file to dist
+import { copyFileSync, readFileSync } from 'fs';
+
+// Copy the main index.js file
+const mainFile = join(projectRoot, 'index.js');
+const distMainFile = join(buildDir, 'index.js');
+copyFileSync(mainFile, distMainFile);
+console.log('✅ Copied index.js');
+
+// Copy the src directory
+import { cpSync } from 'fs';
+const srcDir = join(projectRoot, 'src');
+const distSrcDir = join(buildDir, 'src');
+if (existsSync(srcDir)) {
+  cpSync(srcDir, distSrcDir, { recursive: true });
+  console.log('✅ Copied src directory');
+}
+
 // Create entry point files that deployment platforms expect
 const entryPoints = [
-  {
-    name: 'index.js',
-    content: `#!/usr/bin/env node
-/**
- * Main entry point for deployment
- */
-import '../index.js';
-`
-  },
   {
     name: 'app.js',
     content: `#!/usr/bin/env node
 /**
  * App entry point for deployment platforms
  */
-import '../index.js';
+import './index.js';
 `
   },
   {
@@ -47,7 +56,7 @@ import '../index.js';
 /**
  * Server entry point for deployment platforms
  */
-import '../index.js';
+import './index.js';
 `
   }
 ];
@@ -59,7 +68,13 @@ entryPoints.forEach(({ name, content }) => {
   console.log(`✅ Created ${name}`);
 });
 
-// Create package.json for build output
+// Copy package.json and install dependencies
+const packageJsonPath = join(projectRoot, 'package.json');
+const distPackageJsonPath = join(buildDir, 'package.json');
+copyFileSync(packageJsonPath, distPackageJsonPath);
+console.log('✅ Copied package.json');
+
+// Create package.json for build output (simplified for deployment)
 const buildPackageJson = {
   name: 'hotel-booking-backend-build',
   version: '1.0.0',
@@ -68,7 +83,7 @@ const buildPackageJson = {
   scripts: {
     start: 'node index.js'
   },
-  dependencies: {}
+  dependencies: JSON.parse(readFileSync(packageJsonPath, 'utf8')).dependencies || {}
 };
 
 writeFileSync(
