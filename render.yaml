@@ -25,4 +25,4 @@ services:
     staticPublishPath: Front-End/dist
     envVars:
       - key: VITE_API_URL
-        value: https://room-booking-symf.onrender.com
+        value: https://room-booking-backend-6wga.onrender.com

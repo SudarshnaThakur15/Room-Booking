@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: "https://room-booking-symf.onrender.com",
+        target: "https://room-booking-backend-6wga.onrender.com",
         changeOrigin: true,
         secure: true
       }
@@ -18,7 +18,7 @@ export default defineConfig({
     minify: 'esbuild'
   },
   define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://room-booking-symf.onrender.com')
+    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://room-booking-backend-6wga.onrender.com')
   }
 });
   
