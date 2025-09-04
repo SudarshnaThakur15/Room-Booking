@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: hotel-booking-frontend
+    env: static
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://room-booking-symf.onrender.com

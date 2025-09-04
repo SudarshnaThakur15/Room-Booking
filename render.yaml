@@ -1,0 +1,28 @@
+services:
+  # Backend Service
+  - type: web
+    name: hotel-booking-backend
+    env: node
+    plan: free
+    buildCommand: cd Backend && npm install && npm run build
+    startCommand: cd Backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://your-frontend-url.onrender.com
+
+  # Frontend Service
+  - type: web
+    name: hotel-booking-frontend
+    env: static
+    plan: free
+    buildCommand: cd Front-End && npm install && npm run build
+    staticPublishPath: Front-End/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://room-booking-symf.onrender.com
