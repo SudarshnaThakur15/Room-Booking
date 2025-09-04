@@ -16,4 +16,4 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: FRONTEND_URL
-        sync: false
+        value: https://room-booking-frontend-fu9i.onrender.com
