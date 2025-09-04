@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { userService } from '../services/userService.js';
-import DatePicker from './ui/DatePicker.jsx';
+import DatePicker from './ui/Datepicker.jsx';
 import AvailabilityChecker from './ui/AvailabilityChecker.jsx';
 import BookingDetails from './ui/BookingDetails.jsx';
 import Payscreen from './ui/Payscreen.jsx';
